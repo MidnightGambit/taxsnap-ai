@@ -72,7 +72,7 @@ if uploaded_files:
     if all_records:
         df = pd.DataFrame(all_records)
         st.subheader("📋 AI Processed Documents")
-        st.dataframe(df, use_column_width=True)
+        st.dataframe(df, use_container_width=True)
 
 # Tax Estimator
 st.subheader("Quick Tax Estimate")
