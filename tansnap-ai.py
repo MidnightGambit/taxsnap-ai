@@ -6,84 +6,66 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
-st.set_page_config(page_title="TaxSnap AI", page_icon="📸", layout="wide")
+st.set_page_config(page_title="TaxSnap AI", page_icon="🎮", layout="wide")
 
-# Header
-st.markdown("""
-<style>
-    .big-font {font-size: 48px !important; font-weight: bold;}
-</style>
-""", unsafe_allow_html=True)
+st.title("🎮 TaxSnap AI")
+st.caption("Upload documents • Get smart tax insights for any US state")
 
-st.title("📸 TaxSnap AI")
-st.subheader("Smart Document → Tax Insights")
-
-st.sidebar.title("Settings")
+# Sidebar - Full State & City
+st.sidebar.header("Your Location")
 year = st.sidebar.selectbox("Tax Year", [2025, 2026])
-user_type = st.sidebar.selectbox("User Type", ["Individual", "Freelancer", "Small Business Owner"])
+
+# Full list of US States
+states = ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", 
+          "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", 
+          "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", 
+          "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", 
+          "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", 
+          "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", 
+          "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
+
+state = st.sidebar.selectbox("State", states)
+city = st.sidebar.text_input("City", placeholder="e.g. New York, Los Angeles, Chicago, Austin...")
+
+occupation = st.sidebar.selectbox("Occupation", 
+    ["Salaried Employee", "Freelancer / Gig Worker", "Small Business Owner", 
+     "Student", "Retired", "Investor", "Other"])
+
+tax_scope = st.sidebar.radio("Calculate", ["Federal Only", "Federal + State"])
 
 st.markdown("---")
 
 uploaded_files = st.file_uploader(
-    "Upload your receipts, W-2s, 1099s, invoices, or statements", 
+    "Upload receipts, W-2s, 1099s, or invoices", 
     type=["jpg", "jpeg", "png"], 
-    accept_multiple_files=True,
-    help="Supports multiple files"
+    accept_multiple_files=True
 )
-
-all_records = []
 
 if uploaded_files:
     st.success(f"✅ {len(uploaded_files)} document(s) uploaded")
-    
     for file in uploaded_files:
         col1, col2 = st.columns([1, 2])
         with col1:
-            img = Image.open(file)
-            st.image(img, caption=file.name, use_column_width=True)
+            image = Image.open(file)
+            st.image(image, caption=file.name, use_column_width=True)
 
         with col2:
-            # Improved OCR
-            img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+            st.subheader("Document Analysis")
+            img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
             gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
             text = pytesseract.image_to_string(gray, config='--psm 6')
+            st.text_area("Extracted Text", text[:700] + "..." if len(text) > 700 else text, height=200)
 
-            st.subheader("AI Analysis")
-            st.text_area("Extracted Text", text[:600] + "..." if len(text) > 600 else text, height=180)
-
-            # Smart Categorization
-            category = "Business Expense"
-            if any(word in text.lower() for word in ["medical", "doctor", "pharmacy"]):
-                category = "Medical"
-            elif any(word in text.lower() for word in ["charity", "donation"]):
-                category = "Charitable"
-            elif any(word in text.lower() for word in ["office", "rent", "utilities"]):
-                category = "Home Office / Utilities"
-
-            record = {
-                "File": file.name,
-                "Date": datetime.now().strftime("%Y-%m-%d"),
-                "Category": category,
-                "Deductible": "High",
-                "Notes": "AI categorized"
-            }
-            all_records.append(record)
-
-    if all_records:
-        df = pd.DataFrame(all_records)
-        st.subheader("📋 AI Processed Documents")
-        st.dataframe(df, use_container_width=True)
-
-# Tax Estimator
-st.subheader("Quick Tax Estimate")
-c1, c2, c3 = st.columns(3)
-with c1:
+st.subheader("💰 Quick Tax Estimate")
+col1, col2 = st.columns(2)
+with col1:
     income = st.number_input("Total Income", value=65000, step=1000)
-with c2:
-    expenses = st.number_input("Deductible Expenses", value=12000, step=500)
-with c3:
-    st.metric("Est. Taxable Income", f"${max(0, income - expenses):,}")
+with col2:
+    expenses = st.number_input("Deductible Expenses", value=15000, step=500)
 
-st.caption("TaxSnap AI — Simple tax document assistant for individuals, freelancers & small businesses.")
+if st.button("Calculate Estimate", type="primary"):
+    taxable = max(0, income - expenses)
+    st.success(f"**Estimated Taxable Income:** ${taxable:,.0f}")
+    st.info(f"Note: This is a rough estimate for {state}. State taxes vary significantly.")
 
-st.success("✅ Improved general version loaded!")
+st.caption("TaxSnap AI — Works for any city and state in the US")
